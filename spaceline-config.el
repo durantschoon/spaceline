@@ -107,7 +107,7 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
 (defun spaceline--helm-ag-update ()
   (setq mode-line-format '("%e" (:eval (spaceline-ml-helm-done)))))
 
-(defun spaceline--helm-display-mode-line ()
+(defun spaceline--helm-display-mode-line (source &optional force)
   "Set up a custom helm modeline."
   (setq spaceline--helm-current-source source
         mode-line-format '("%e" (:eval (spaceline-ml-helm))))
