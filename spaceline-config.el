@@ -107,6 +107,28 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
 (defun spaceline--helm-ag-update ()
   (setq mode-line-format '("%e" (:eval (spaceline-ml-helm-done)))))
 
+(defun spaceline--helm-display-mode-line ()
+  "Set up a custom helm modeline."
+  (setq spaceline--helm-current-source source
+        mode-line-format '("%e" (:eval (spaceline-ml-helm))))
+  (when force (force-mode-line-update)))
+
+(defun spaceline--info-set-mode-line ()
+  "Set up a custom info modeline."
+  (if (featurep 'info+)
+      (let* ((nodes (s-split " > " mode-line-format))
+             (topic (prog2
+                        (string-match "(\\(.+\\))\\(.+\\)" (car nodes))
+                        (propertize (concat "INFO "
+                                            (match-string 1 (car nodes)))
+                                    'face 'bold)
+                      (setcar nodes (match-string 2 (car nodes))))))
+        (setq spaceline--info-nodes nodes)
+        (setq spaceline--info-topic topic)
+        (setq-local mode-line-format '("%e" (:eval (spaceline-ml-info)))))
+    (message "info+ is not available: spaceline-info-mode disabled")
+    (spaceline-info-mode -1)))
+
 ;;;###autoload
 (define-minor-mode spaceline-helm-mode
   "Customize the mode-line in helm."
@@ -127,15 +149,10 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
             helm-follow
             helm-prefix-argument)
           '(helm-help))
-        (defadvice helm-display-mode-line (after spaceline-helm)
-          "Set up a custom helm modeline."
-          (setq spaceline--helm-current-source source
-                mode-line-format '("%e" (:eval (spaceline-ml-helm))))
-          (when force (force-mode-line-update)))
-        (setq helm-ag-show-status-function 'spaceline--helm-ag-update)
-        (ad-activate 'helm-display-mode-line))
+        (advice-add 'helm-display-mode-line :after #'spaceline--helm-display-mode-line)
+        (setq helm-ag-show-status-function 'spaceline--helm-ag-update))
     (setq helm-ag-show-status-function 'helm-ag-show-status-default-mode-line)
-    (ad-deactivate 'helm-display-mode-line)))
+    (advice-remove 'helm-display-mode-line #'spaceline--helm-display-mode-line)))
 
 ;;; Info custom mode
 ;;  ================
@@ -150,23 +167,8 @@ This minor mode requires info+."
   (if spaceline-info-mode
       (progn
         (spaceline-compile 'info '(info-topic (info-nodes :separator " > ")) nil)
-        (defadvice Info-set-mode-line (after spaceline-info)
-          "Set up a custom info modeline."
-          (if (featurep 'info+)
-              (let* ((nodes (s-split " > " mode-line-format))
-                     (topic (prog2
-                                (string-match "(\\(.+\\))\\(.+\\)" (car nodes))
-                                (propertize (concat "INFO "
-                                                    (match-string 1 (car nodes)))
-                                            'face 'bold)
-                              (setcar nodes (match-string 2 (car nodes))))))
-                (setq spaceline--info-nodes nodes)
-                (setq spaceline--info-topic topic)
-                (setq-local mode-line-format '("%e" (:eval (spaceline-ml-info)))))
-            (message "info+ is not available: spaceline-info-mode disabled")
-            (spaceline-info-mode -1)))
-        (ad-activate 'Info-set-mode-line))
-    (ad-deactivate 'Info-set-mode-line)))
+        (advice-add 'Info-set-mode-line :after #'spaceline--info-set-mode-line))
+    (advice-remove 'Info-set-mode-line #'spaceline--info-set-mode-line)))
 
 (provide 'spaceline-config)
 
