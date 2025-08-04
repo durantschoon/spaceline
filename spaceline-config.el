@@ -113,7 +113,7 @@ ADDITIONAL-SEGMENTS are inserted on the right, between `global' and
         mode-line-format '("%e" (:eval (spaceline-ml-helm))))
   (when force (force-mode-line-update)))
 
-(defun spaceline--info-set-mode-line ()
+(defun spaceline--info-set-mode-line (&rest args)
   "Set up a custom info modeline."
   (if (featurep 'info+)
       (let* ((nodes (s-split " > " mode-line-format))
